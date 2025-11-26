@@ -1,7 +1,7 @@
-### Goldex
+# Goldex
 
 ## Goldex - Website
 
-# Authors
+### Authors
 - Khadija Mammadli
 - Saleh Shahverdiyev
