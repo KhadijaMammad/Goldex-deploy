@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, Product } from '../lib/supabase';
 import { ArrowLeft, Loader2, Package, Weight, Layers, DollarSign } from 'lucide-react';
+import { ProductDetailModal } from './ProductDetailModal';
 
 interface ProductDetailProps {
   productId: string;
@@ -175,6 +176,11 @@ export function ProductDetail({ productId, onBack }: ProductDetailProps) {
             <div className="mb-6">
               <h2 className="text-lg font-semibold text-gray-900 mb-3">Təsvir</h2>
               <p className="text-gray-700 leading-relaxed">{product.description}</p>
+            </div>
+            <div>
+              <ProductDetailModal productId={''} onClose={function (): void {
+                throw new Error('Function not implemented.');
+              } } />
             </div>
 
             <div className="mt-auto">
