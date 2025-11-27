@@ -71,7 +71,7 @@ function App() {
   useEffect(() => {
     const measure = () => {
       const h = headerRef.current?.offsetHeight || 0;
-      setHeaderHeight(h); // DÜZƏLİŞ: dəyər state-ə yazıldı
+      setHeaderHeight(h); 
     };
     measure();
     window.addEventListener("resize", measure);
