@@ -89,7 +89,7 @@ function App() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <img
-                src="/goldex logo.jpg"
+                src="/goldex-logo.jpg"
                 alt="Goldex"
                 className={`rounded-full object-cover transition-all duration-200 ${
                   isScrolled ? "w-10 h-10" : "w-16 h-16"
