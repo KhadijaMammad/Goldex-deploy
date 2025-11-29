@@ -21,3 +21,10 @@ dist-ssr
 *.sln
 *.sw?
 .env
+
+$ # Node modules
+node_modules/
+
+# Embedded Goldex folder
+Goldex/
+
