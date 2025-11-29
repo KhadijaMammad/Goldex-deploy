@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, Product } from '../lib/supabase';
 import { ArrowLeft, Loader2, Package, Weight, Layers, DollarSign } from 'lucide-react';
+import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 interface ProductDetailProps {
   productId: string;
@@ -95,7 +96,7 @@ export function ProductDetail({ productId, onBack }: ProductDetailProps) {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 p-8">
           <div>
             <div className="aspect-square overflow-hidden rounded-lg bg-gray-100 mb-4">
-              <img
+              <ImageWithSkeleton
                 src={selectedImage}
                 alt={product.title}
                 className="w-full h-full object-cover"
@@ -114,7 +115,7 @@ export function ProductDetail({ productId, onBack }: ProductDetailProps) {
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
                   >
-                    <img
+                    <ImageWithSkeleton
                       src={image}
                       alt={`${product.title} - Image ${index + 1}`}
                       className="w-full h-full object-cover"

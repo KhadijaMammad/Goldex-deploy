@@ -5,6 +5,7 @@ import { CreditCalculator } from "./components/CreditCalculator";
 import { AdminLogin } from "./pages/AdminLogin";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { Settings } from "lucide-react";
+import { ImageWithSkeleton } from "./components/ImageWithSkeleton";
 
 type View = "catalog" | "detail" | "admin-login" | "admin-dashboard";
 
@@ -88,7 +89,7 @@ function App() {
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <img
+              <ImageWithSkeleton
                 src="/goldex-logo.jpg"
                 alt="Goldex"
                 className={`rounded-full object-cover transition-all duration-200 ${

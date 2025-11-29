@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase, Product } from '../lib/supabase';
 import { X, Loader2, Calculator, MessageCircle } from 'lucide-react';
+import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 interface ProductDetailModalProps {
   productId: string;
@@ -107,7 +108,7 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
             {/* Left: Images */}
             <div>
               <div className="aspect-square overflow-hidden rounded-lg bg-gray-100 mb-4 relative">
-                <img
+                <ImageWithSkeleton
                   src={selectedImage}
                   alt={product.title}
                   className="w-full h-full object-cover"
@@ -131,7 +132,7 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <img
+                      <ImageWithSkeleton
                         src={image}
                         alt={`${product.title} - ${index + 1}`}
                         className="w-full h-full object-cover"
@@ -235,7 +236,7 @@ export function ProductDetailModal({ productId, onClose }: ProductDetailModalPro
                     <h3 className="font-semibold text-gray-900">Kredit Variantları</h3>
                   </div>
                   <div className="flex items-center gap-2 mb-4">
-                    <img src="/city logo.jpg" alt="City Finance" className="h-8 object-contain" />
+                    <ImageWithSkeleton src="/city-logo.jpg" alt="City Finance" className="h-8 object-contain" />
                     <span className="text-xs text-gray-600 italic">City Finance tərəfindən</span>
                   </div>
                   <div className="grid grid-cols-2 gap-3 mb-4">

@@ -1,5 +1,6 @@
 import { Package } from 'lucide-react';
 import { Product } from '../lib/supabase';
+import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 interface ProductCardProps {
   product: Product;
@@ -27,7 +28,7 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
         className="aspect-square overflow-hidden bg-gray-100 relative cursor-pointer"
         onClick={() => onViewDetails(product.id)}
       >
-        <img
+        <ImageWithSkeleton
           src={product.main_image}
           alt={product.title}
           className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"

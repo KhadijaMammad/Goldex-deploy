@@ -5,6 +5,7 @@ import { ProductEditModal } from "./ProductEditModal";
 import toast from "react-hot-toast";
 import Swal from "sweetalert2";
 import "sweetalert2/dist/sweetalert2.min.css";
+import { ImageWithSkeleton } from "../ImageWithSkeleton";
 
 interface Product {
   id: string;
@@ -217,7 +218,7 @@ const handleDelete = async (id: string) => {
               {filteredProducts.map((product) => (
                 <tr key={product.id} className="border-b hover:bg-gray-50">
                   <td className="py-3 px-4">
-                    <img
+                    <ImageWithSkeleton
                       src={product.main_image}
                       alt={product.title}
                       className="w-12 h-12 object-cover rounded"

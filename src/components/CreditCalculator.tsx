@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Calculator, Loader2 } from 'lucide-react';
+import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 export function CreditCalculator() {
   const [productPrice, setProductPrice] = useState<string>('1000');
@@ -82,7 +83,7 @@ export function CreditCalculator() {
           <Calculator className="w-5 h-5 text-teal-700" />
           <h2 className="text-xl font-bold text-gray-900">Kredit Kalkulyatoru</h2>
         </div>
-        <img src="/city logo.jpg" alt="City Finance" className="h-10 object-contain" />
+        <ImageWithSkeleton src="/city-logo.jpg" alt="City Finance" className="h-10 object-contain" />
       </div>
 
       <p className="text-xs text-gray-600 mb-4 italic">
