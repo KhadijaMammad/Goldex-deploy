@@ -1,6 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { Calculator, Loader2 } from 'lucide-react';
+
+// TypeScript xətasını aradan qaldırmaq üçün:
+// calculatedPayments-in tipini müəyyənləşdiririk. 
+// Key (açarı) number (ay) olan və value (dəyəri) number (ödəniş) olan bir obyektdir.
+type CalculatedPayments = Record<number, number>;
 
 export function CreditCalculator() {
   const [productPrice, setProductPrice] = useState<string>('1000');
@@ -10,6 +15,9 @@ export function CreditCalculator() {
   const [minPrice, setMinPrice] = useState<number>(100);
   const [maxPrice, setMaxPrice] = useState<number>(10000);
   const [loading, setLoading] = useState(true);
+
+  // Sabit təklif olunan ay müddətləri
+  const creditTerms = [3, 6, 12, 18]; 
 
   useEffect(() => {
     fetchSettings();
@@ -53,17 +61,35 @@ export function CreditCalculator() {
     }
   }
 
-  const calculateMonthlyPayment = () => {
-    const price = parseFloat(productPrice);
-    if (isNaN(price) || price < minPrice || price > maxPrice) return 0;
+  // Sadə faiz əsasında aylıq ödənişi hesablamaq (Orijinal Məntiq Saxlanıldı)
+  const calculateMonthlyPaymentForTerm = (price: string, rate: number, term: number) => {
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice) || parsedPrice < minPrice || parsedPrice > maxPrice) return 0;
 
-    const monthlyRate = interestRate / 100 / 12;
-    const totalAmount = price * (1 + monthlyRate * months);
-    return totalAmount / months;
+    const monthlyRate = rate / 100 / 12;
+    // TotalAmount = Principal * (1 + MonthlyRate * Months)
+    const totalAmount = parsedPrice * (1 + monthlyRate * term); 
+    
+    return totalAmount / term;
   };
 
-  const monthlyPayment = calculateMonthlyPayment();
+  // Cari seçilmiş ay üçün aylıq ödəniş
+  const monthlyPayment = useMemo(() => {
+    return calculateMonthlyPaymentForTerm(productPrice, interestRate, months);
+  }, [productPrice, interestRate, months, minPrice, maxPrice]);
+  
+  // Cari seçilmiş ay üçün ümumi ödəniş
   const totalAmount = monthlyPayment * months;
+
+  // Bütün təklif olunan ay müddətləri üçün aylıq ödənişləri hesablamaq
+  const calculatedPayments = useMemo(() => {
+    // reduce funksiyasına generic tip verilir: Record<number, number>
+    return creditTerms.reduce((acc: CalculatedPayments, term: number) => {
+      acc[term] = calculateMonthlyPaymentForTerm(productPrice, interestRate, term);
+      return acc;
+    }, {} as CalculatedPayments); // Başlanğıc dəyəri də eyni tipə çevrilir
+  }, [productPrice, interestRate, minPrice, maxPrice, creditTerms]);
+
 
   if (loading) {
     return (
@@ -110,37 +136,44 @@ export function CreditCalculator() {
           </p>
         </div>
 
-        {/* MONTHS SELECTION */}
+        {/* MONTHS SELECTION with Payments Display */}
         <div>
           <label className="block text-sm font-medium text-black mb-2">
-            Kredit müddəti
+            Kredit müddəti (Aylıq Ödəniş)
           </label>
-          <div className="flex flex-wrap gap-2">
-            {[3, 6, 12, 18].map((m) => (
+          <div className="space-y-2"> {/* Alt-alta düzülmə üçün space-y-2 */}
+            {creditTerms.map((m) => (
               <button
                 key={m}
                 onClick={() => setMonths(m)}
-                className={`w-[calc(50%-4px)] px-3 py-2 rounded-lg font-semibold text-sm transition-all ${
+                // Düymənin eni w-full
+                className={`w-full px-3 py-2 rounded-lg font-semibold text-sm transition-all flex justify-between items-center ${
                   months === m
                     ? "bg-blue-300 text-black shadow border border-blue-400"
                     : "bg-white text-black border-2 border-green-200 hover:border-green-300"
                 }`}
               >
-                {m} ay
+                <span>{m} ay</span>
+                {/* Aylıq Ödənişi Düymənin daxilində göstərir */}
+                <span className={`text-base font-bold ${months === m ? "text-blue-800" : "text-black"}`}>
+                  {calculatedPayments[m] !== undefined && calculatedPayments[m] > 0
+                    ? `₼${calculatedPayments[m].toFixed(2)}`
+                    : '---'}
+                </span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* PAYMENT BOX */}
+        {/* CURRENT SELECTED PAYMENT BOX */}
         <div className="bg-white rounded-lg p-4 border-2 border-green-300 shadow-sm">
           <div className="space-y-3">
             <div className="flex justify-between items-center pb-2 border-b border-gray-200">
-              <span className="text-black text-sm font-medium">Aylıq ödəniş:</span>
+              <span className="text-black text-sm font-medium">Seçilmiş Aylıq ödəniş:</span>
               <span className="text-xl font-bold text-black">₼{monthlyPayment.toFixed(2)}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-black text-sm font-medium">Ümumi ödəniş:</span>
+              <span className="text-black text-sm font-medium">Seçilmiş Ümumi ödəniş:</span>
               <span className="text-lg font-semibold text-black">₼{totalAmount.toFixed(2)}</span>
             </div>
           </div>
@@ -149,7 +182,7 @@ export function CreditCalculator() {
         {/* INFO BOX */}
         <div className="bg-lime-100 rounded-lg p-3 border border-lime-300">
           <p className="text-xs text-black text-center leading-tight">
-            Bu hesablama yalnız təxmini məlumat üçündür.  
+            Bu hesablama yalnız təxmini məlumat üçündür.  
             Dəqiq şərtlər üçün mağaza ilə əlaqə saxlayın.
           </p>
         </div>

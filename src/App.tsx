@@ -5,13 +5,19 @@ import { CreditCalculator } from "./components/CreditCalculator";
 import { AdminLogin } from "./pages/AdminLogin";
 import { AdminDashboard } from "./pages/AdminDashboard";
 import { Settings } from "lucide-react";
+import { supabase } from "./lib/supabase";
+import { CategoryDropdown } from "./components/CategoryDropdown";
+import { CategoryTabs } from "./components/CategoryTabs";
 
 type View = "catalog" | "detail" | "admin-login" | "admin-dashboard";
 
 function App() {
   const [view, setView] = useState<View>("catalog");
-  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(
+    null
+  );
   const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [categories, setCategories] = useState<string[]>([]); // Kateqoriya state
 
   const handleViewDetails = (productId: string) => {
     setSelectedProductId(productId);
@@ -23,13 +29,35 @@ function App() {
     setSelectedProductId(null);
   };
 
+  // Kateqoriyaları App.tsx-də yükləmə
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const { data, error } = await supabase
+          .from("products")
+          .select("category")
+          .eq("active", true);
+
+        if (error) throw error;
+
+        const uniqueCategories = Array.from(
+          new Set(data?.map((p) => p.category) || [])
+        );
+        setCategories(uniqueCategories.filter((c) => c));
+      } catch (err) {
+        console.error("Kateqoriyaları yükləmə xətası:", err);
+      }
+    }
+    fetchCategories();
+  }, []);
+
   const handleGoToAdmin = () => {
     setView("admin-login");
   };
 
   const [isScrolled, setIsScrolled] = useState(false);
   const headerRef = useRef<HTMLElement | null>(null);
-  const [headerHeight, setHeaderHeight] = useState<number>(0);
+  const [headerHeight, setHeaderHeight] = useState<number>(0); 
 
   useEffect(() => {
     const onScroll = () => {
@@ -43,7 +71,7 @@ function App() {
   useEffect(() => {
     const measure = () => {
       const h = headerRef.current?.offsetHeight || 0;
-      setHeaderHeight(h);
+      setHeaderHeight(h); 
     };
     measure();
     window.addEventListener("resize", measure);
@@ -76,66 +104,75 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 to-gray-50">
       <header
-        className={`bg-gradient-to-r from-gray-900 to-gray-800 shadow-lg sticky top-0 z-10 transition-all duration-200 ease-in-out ${
+        className={`bg-gradient-to-br from-gray-900 to-gray-800 shadow-lg sticky top-0 z-10 transition-all duration-200 ease-in-out ${
           isScrolled ? "backdrop-blur-sm" : ""
         }`}
         ref={headerRef}
       >
         <div
-          className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 transition-all duration-200 ease-in-out ${
-            isScrolled ? "py-3" : "py-6"
+          className={`max-w-7xl mx-auto  transition-all duration-200 ease-in-out ${
+            isScrolled ? "py-1" : "py-3"
           }`}
         >
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
               <img
                 src="/goldex logo.jpg"
                 alt="Goldex"
                 className={`rounded-full object-cover transition-all duration-200 ${
-                  isScrolled ? "w-10 h-10" : "w-16 h-16"
+                  isScrolled ? "w-6 h-6" : "w-8 h-8"
                 }`}
               />
               <div>
-                <h1
+                <h2
                   className={`font-bold text-white transition-all duration-200 ${
-                    isScrolled ? "text-xl" : "text-3xl"
+                    isScrolled ? "text-l" : "text-l"
                   }`}
                 >
                   GOLDEX - Məhsul kataloqu
-                </h1>
-                <p
-                  className={`text-amber-100 mt-1 transition-opacity ${
-                    isScrolled ? "opacity-0 h-0 overflow-hidden" : "opacity-100"
-                  }`}
-                >
-                  Zərif zərgərlik kolleksiyamızı kəşf edin
-                </p>
+                </h2>
               </div>
             </div>
+
+            {/* YENİ: DROP DOWN (Yalnız kateqoriya seçilməyibsə) */}
+            <div className="flex items-center gap-4">
+              {view === "catalog" &&
+                selectedCategory === "" &&
+                categories.length > 0 && (
+                  <CategoryDropdown
+                    categories={categories}
+                    onCategorySelect={setSelectedCategory}
+                  />
+                )}
+              
+            </div>
+            {/* YENİ KOD SONU */}
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
         {view === "catalog" && (
           <>
-            {/* CATEGORY SELECTOR (sticky same as before) */}
-            <div
-              className="sticky z-20 bg-white"
-              style={{ top: `${headerHeight}px` }}
-            ></div>
+            {/* YENİ: SEKUNDAR NAVİGASİYA (Yalnız kateqoriya seçilibsə) */}
+            {selectedCategory !== "" && (
+              <CategoryTabs
+                categories={categories}
+                selectedCategory={selectedCategory}
+                onCategorySelect={setSelectedCategory}
+                headerHeight={headerHeight}
+              />
+            )}
 
             {/* NEW LAYOUT — PRODUCTS LEFT, CALCULATOR RIGHT */}
             <div className="flex flex-col lg:flex-row gap-10">
-              
               {/* LEFT — PRODUCT GRID */}
               <div className="flex-1">
                 <ProductGrid
                   onViewDetails={handleViewDetails}
                   selectedCategory={selectedCategory}
                   onCategoryChange={setSelectedCategory}
-                  headerHeight={headerHeight}
+                  // headerHeight propu ProductGrid-dən silindi
                 />
               </div>
 
@@ -153,25 +190,27 @@ function App() {
             onBack={handleBackToCatalog}
           />
         )}
-
       </main>
 
-      <footer className="bg-gradient-to-r from-gray-900 to-gray-800 border-t border-amber-500 mt-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <p className="text-amber-100">
-              &copy; 2025 GOLDEX. Bütün hüquqlar qorunur.
-            </p>
-            <button
-              onClick={handleGoToAdmin}
-              className="p-2 text-amber-500 hover:text-amber-400 transition-colors"
-              title="Admin Panel"
-            >
-              <Settings className="w-6 h-6" />
-            </button>
-          </div>
-        </div>
-      </footer>
+      {/* Footer kodu dəyişməz qaldı */}
+      <footer className="bg-gradient-to-r from-gray-900 to-gray-800 border-t border-amber-500 mt-8">
+  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+    <div className="flex items-center justify-between">
+      <p className="text-amber-100 text-sm">
+        &copy; 2025 GOLDEX. Bütün hüquqlar qorunur.
+      </p>
+      
+      <button
+        onClick={handleGoToAdmin}
+        // İkonun üzərindəki paddingi təmizləyərək hündürlüyü azaldırıq (p-2 yox, sadəcə text rəngi)
+        className="text-amber-500 hover:text-amber-400 transition-colors"
+        title="Admin Panel"
+      >
+        <Settings className="w-5 h-5" /> {/* İkon ölçüsü azaldıldı */}
+      </button>
+    </div>
+  </div>
+</footer>
     </div>
   );
 }

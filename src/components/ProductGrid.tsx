@@ -1,23 +1,22 @@
 import { useState, useEffect } from 'react';
 import { supabase, Product } from '../lib/supabase';
 import { ProductCard } from './ProductCard';
-import { Loader2, Filter } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 interface ProductGridProps {
   onViewDetails: (id: string) => void;
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
-  headerHeight: number; 
+  // headerHeight silindi
 }
 
 export function ProductGrid({
   onViewDetails,
   selectedCategory,
-  onCategoryChange,
-  headerHeight,
+  // onCategoryChange, // Artıq bu komponentin içində istifadə edilmir, lakin prop kimi saxlamaq olar.
 }: ProductGridProps) {
   const [products, setProducts] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  // const [categories, setCategories] = useState<string[]>([]); // Silindi
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,8 +36,7 @@ export function ProductGrid({
 
       setProducts(data || []);
 
-      const uniqueCategories = Array.from(new Set(data?.map(p => p.category) || []));
-      setCategories(uniqueCategories);
+      // Kateqoriya məntiqi silindi
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Məhsulları yükləmək mümkün olmadı');
     } finally {
@@ -57,6 +55,8 @@ export function ProductGrid({
       </div>
     );
   }
+
+  // ... (Error və products.length === 0 yoxlamaları)
 
   if (error) {
     return (
@@ -77,50 +77,15 @@ export function ProductGrid({
     );
   }
 
+
   const handleViewDetails = (id: string) => {
     onViewDetails(id);
   };
 
   return (
     <div>
-      {/* Sticky Category Section */}
-      <div
-        className="bg-white rounded-lg shadow-md p-4 mb-6 sticky z-20"
-        style={{ top: `${headerHeight}px` }}
-      >
-        <div className="flex items-center gap-3 mb-3">
-          <Filter className="w-5 h-5 text-gray-700" />
-          <h3 className="font-semibold text-gray-900">Kateqoriya</h3>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => onCategoryChange('')}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              selectedCategory === ''
-                ? 'bg-amber-500 text-gray-900'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Hamısı
-          </button>
-          {categories.map(category => (
-            <button
-              key={category}
-              onClick={() => onCategoryChange(category)}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                selectedCategory === category
-                  ? 'bg-amber-500 text-gray-900'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Products Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-1 md:gap-6">
         {filteredProducts.map(product => (
           <ProductCard key={product.id} product={product} onViewDetails={handleViewDetails} />
         ))}
