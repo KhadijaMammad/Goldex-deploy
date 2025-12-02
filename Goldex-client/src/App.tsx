@@ -4,11 +4,10 @@ import ProductDetail from "./components/ProductDetail";
 import { CreditCalculator } from "./components/CreditCalculator";
 import { AdminLogin } from "./pages/AdminLogin";
 import { AdminDashboard } from "./pages/AdminDashboard";
-// import { Settings } from "lucide-react";
-import { Settings } from "lucide-react";
 import { supabase } from "./lib/supabase";
-import { CategoryTabs } from "./components/CategoryTabs"; // İdxal olundu
+import { CategoryTabs } from "./components/CategoryTabs"; 
 import { CategoryDropdown } from "./components/CategoryDropdown";
+import { Settings } from "lucide-react";
 
 type View = "catalog" | "detail" | "admin-login" | "admin-dashboard";
 

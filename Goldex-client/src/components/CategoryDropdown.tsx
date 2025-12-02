@@ -1,4 +1,3 @@
-// src/components/CategoryDropdown.tsx
 
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
@@ -17,6 +16,8 @@ export function CategoryDropdown({ categories, onCategorySelect }: CategoryDropd
   };
 
   return (
+    <>
+    
     <div className="relative z-30">
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -51,5 +52,6 @@ export function CategoryDropdown({ categories, onCategorySelect }: CategoryDropd
         </div>
       )}
     </div>
+    </>
   );
 }
