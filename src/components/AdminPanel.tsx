@@ -3,6 +3,7 @@ import { supabase, Product } from '../lib/supabase';
 import { Plus, Edit, Trash2, Save, X, DollarSign, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
 import { CreditSettings } from './CreditSettings';
 import toast from 'react-hot-toast';
+import { ImageWithSkeleton } from './ImageWithSkeleton';
 
 interface AdminPanelProps {
   onBack: () => void;
@@ -436,7 +437,7 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
               {products.map((product) => (
                 <tr key={product.id} className="border-b border-gray-100 hover:bg-gray-50">
                   <td className="py-3 px-4">
-                    <img src={product.main_image} alt={product.title} className="w-16 h-16 object-cover rounded" />
+                    <ImageWithSkeleton src={product.main_image} alt={product.title} className="w-16 h-16 object-cover rounded" />
                   </td>
                   <td className="py-3 px-4">{product.title}</td>
                   <td className="py-3 px-4">{product.category}</td>

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import toast from 'react-hot-toast';
 import { X, Save, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
+import { ImageWithSkeleton } from '../ImageWithSkeleton';
 
 interface Product {
   id?: string;
@@ -389,7 +390,7 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
                 {formData.main_image ? (
                   <div className="flex items-center gap-4">
-                    <img
+                    <ImageWithSkeleton
                       src={formData.main_image}
                       alt="Main"
                       className="w-24 h-24 object-cover rounded-lg"
@@ -449,7 +450,7 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
                   <div className="grid grid-cols-4 gap-3">
                     {formData.additional_images.map((image, index) => (
                       <div key={index} className="relative group">
-                        <img
+                        <ImageWithSkeleton
                           src={image}
                           alt={`Additional ${index + 1}`}
                           className="w-full aspect-square object-cover rounded-lg"
