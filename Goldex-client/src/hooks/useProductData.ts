@@ -69,7 +69,7 @@ export function useProductData(productId: string): ProductData {
         if (settingsData) {
           const newSettings: Partial<CreditSettings> = {};
           // Ayarları parse etmə məntiqi eynidir...
-          settingsData.forEach((setting: { value: string; key: any; }) => {
+          settingsData.forEach((setting) => {
             const value = parseFloat(setting.value);
             // ... (düzgün switch case məntiqiniz)
             switch (setting.key) {
