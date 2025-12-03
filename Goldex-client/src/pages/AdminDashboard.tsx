@@ -5,10 +5,7 @@ import { ProductsSection } from '../components/admin/ProductsSection';
 import { CreditSettingsSection } from '../components/admin/CreditSettingsSection';
 import { CategoriesSection } from '../components/admin/CategoriesSection';
 import { Toaster } from 'react-hot-toast';
-
-interface AdminDashboardProps {
-  onLogout: () => void;
-}
+import { AdminDashboardProps } from '../types/admin/admin.type';
 
 type Section = 'gold' | 'products' | 'credit' | 'categories';
 

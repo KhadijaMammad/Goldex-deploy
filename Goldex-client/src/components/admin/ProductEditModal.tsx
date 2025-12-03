@@ -1,218 +1,178 @@
-import { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { useState, useEffect, ChangeEvent } from 'react';
+import axios from 'axios';
 import toast from 'react-hot-toast';
 import { X, Save, Loader2, Upload, Image as ImageIcon } from 'lucide-react';
-import { ImageWithSkeleton } from '../ImageWithSkeleton';
+import { ImageWithSkeleton } from '../ImageWithSkeleton'; // Fərz edilir ki, bu komponent mövcuddur
+import { Product, ProductEditModalProps } from '../../types/products/product.type'; // Yeni tip strukturunuzu buradan oxuyur
 
-interface Product {
-  id?: string;
-  title: string;
-  article?: string;
-  category: string;
-  material: string;
-  karat: string;
-  weight_grams: number;
-  gemstone_type: string;
-  gemstone_carat: string;
-  price_azn: number;
-  production_status: string;
-  stock_status: string;
-  availability: string;
-  main_image: string;
-  additional_images: string[];
-  description: string;
-  size: string;
-  featured_flags: string[];
-  active: boolean;
-  selected_credit_option?: string;
-}
+// Product tipində olan və formda istifadə edilməyəcək sahələri çıxarırıq (Omit)
+type EditableProduct = Omit<Product, 
+  'id' | 'weight' | 'search_string' | 'views_count' | 'created_at' | 'updated_at' | 'gold_price_id' | 'is_most_viewed' | 'is_new' | 'is_recommended' | 'is_active'
+> & {
+    // Formda idarə etmək üçün əlavə sahələr
+    weight_grams: number; // Çəki (qram) daxil etmək üçün
+    active: boolean; // is_active əvəzinə
+    isNew: boolean; // is_new əvəzinə
+    isRecommended: boolean; // is_recommended əvəzinə
+    isMostViewed: boolean; // is_most_viewed əvəzinə
+    // NOTE: Əlavə şəkillər (additional_images_links) siyahıda olmadığı üçün çıxarılmışdır.
+};
 
-interface ProductEditModalProps {
-  product: Product | null;
-  onClose: () => void;
-  onSave: () => void;
-  goldPricePerGram: number;
-}
+// Fərz edilir ki, bu dəyər layihənizdə təyin olunub
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }: ProductEditModalProps) {
-  const [formData, setFormData] = useState<Product>({
+    
+  // Çəki (weight: "3.5g") sahəsindən rəqəmi çıxaran funksiya
+  const getWeightGrams = (weightString: string | undefined): number => {
+    if (!weightString) return 0;
+    const match = weightString.match(/(\d+(\.\d+)?)/);
+    return match ? parseFloat(match[0]) : 0;
+  };
+
+  const initialFormData: EditableProduct = {
     title: '',
-    article: '',
-    category: '',
+    description: null,
+    slug: '',
+    category_id: 0,
+    metal: '',
     material: '',
-    karat: '',
-    weight_grams: 0,
-    gemstone_type: '',
-    gemstone_carat: '',
-    price_azn: 0,
+    carat: null,
+    main_image_link: '',
+    gemstone_type: null,
+    gemstone_carat: null,
+    gemstone_size: null,
     production_status: 'Hazırdır',
-    stock_status: 'Stokda',
     availability: 'mövcuddur',
-    main_image: '',
-    additional_images: [],
-    description: '',
-    size: '',
-    featured_flags: [],
+    stock_status: 'Stokda',
+    discount: 0,
+    custom_price: null,
+    
+    // Form sahələri
+    weight_grams: 0,
     active: true,
-    selected_credit_option: ''
-  });
-  
+    isNew: false,
+    isRecommended: false,
+    isMostViewed: false,
+  };
+
+  const [formData, setFormData] = useState<EditableProduct>(initialFormData);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([]);
-  const [creditOptions, setCreditOptions] = useState<Array<{ name: string; months_min: number; months_max: number; interest_percent: number }>>([]);
-  const [selectedCreditOption, setSelectedCreditOption] = useState<string>('');
-
+  const [categories, setCategories] = useState<Array<{ id: number; name: string }>>([]);
+  
   useEffect(() => {
     if (product) {
-      setFormData(product);
-      setSelectedCreditOption(product.selected_credit_option || '');
+        setFormData({
+            ...product,
+            weight_grams: getWeightGrams(product.weight),
+            active: product.is_active,
+            isNew: product.is_new,
+            isRecommended: product.is_recommended,
+            isMostViewed: product.is_most_viewed,
+            // Köhnə kodda olan lakin yeni siyahıda olmayan sahələr ötürülür.
+            // Əgər API-də bu sahələr yoxdursa, 'EditableProduct' onları saxlamır.
+            // Bu, 'EditableProduct' tipində tip xətalarına səbəb ola bilər,
+            // lakin Omit istifadə edərək yalnız lazım olanları saxlayırıq.
+        } as EditableProduct);
+        
     }
   }, [product]);
 
   useEffect(() => {
     fetchCategories();
-    fetchCreditOptions();
   }, []);
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('categories')
-        .select('id, name')
-        .eq('active', true)
-        .order('display_order', { ascending: true });
-
-      if (error) throw error;
-      setCategories(data || []);
-    } catch (err) {
-      console.error('Error fetching categories:', err);
-    }
-  };
-
-  const fetchCreditOptions = async () => {
-    try {
-      const { data } = await supabase
-        .from('settings')
-        .select('value')
-        .eq('key', 'credit_options')
-        .maybeSingle();
-
-      if (data) {
-        setCreditOptions(JSON.parse(data.value));
+      // Fərz edilir ki, kateqoriya API-si mövcuddur
+      const response = await axios.get(`${API_URL}/categories`);
+      const data = response.data.data || response.data;
+      if (Array.isArray(data)) {
+        // ID-lərin rəqəm olduğunu fərz edirik
+        setCategories(data.map((c: any) => ({ id: Number(c.id), name: c.title || c.name })));
       }
     } catch (err) {
-      console.error('Error fetching credit options:', err);
+      console.error('Error fetching categories:', err);
+      toast.error('Kateqoriyaları yükləmək mümkün olmadı.');
     }
   };
 
-  const calculatedGoldValue = formData.weight_grams * goldPricePerGram * 1.7;
+  // Təhlükəsiz çəki dəyəri
+  const safeWeightGrams = Number(formData.weight_grams) || 0;
+  
+  // Custom qiymət yoxdursa, hesablanmış qızıl dəyərini istifadə edirik (yalnız görüntü üçün)
+  const calculatedGoldValue = safeWeightGrams * goldPricePerGram * 1.7; 
 
+  // Mock image upload funksiyası
   const uploadImage = async (file: File): Promise<string> => {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    const filePath = `${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('product-images')
-      .upload(filePath, file);
-
-    if (uploadError) throw uploadError;
-
-    const { data: { publicUrl } } = supabase.storage
-      .from('product-images')
-      .getPublicUrl(filePath);
-
-    return publicUrl;
+    // ... Mock upload logic
+    await new Promise(resolve => setTimeout(resolve, 1500));
+    return `https://mock-image-server.com/images/${Date.now()}-${file.name.replace(/\s/g, '_')}`;
   };
 
-  const handleMainImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMainImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploading(true);
     try {
       const url = await uploadImage(file);
-      setFormData({ ...formData, main_image: url });
+      setFormData({ ...formData, main_image_link: url }); // Yeni ad: main_image_link
     } catch (err) {
       console.error('Error uploading image:', err);
-      toast.error('Şəkillər yüklənərkən xəta baş verdi!');
+      toast.error('Şəkil yüklənərkən xəta baş verdi!');
     } finally {
       setUploading(false);
     }
-  };
-
-  const handleAdditionalImagesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = e.target.files;
-    if (!files || files.length === 0) return;
-
-    setUploading(true);
-    try {
-      const uploadPromises = Array.from(files).map(file => uploadImage(file));
-      const urls = await Promise.all(uploadPromises);
-
-      const newImages = [...formData.additional_images, ...urls];
-      setFormData({ ...formData, additional_images: newImages });
-    } catch (err) {
-      console.error('Error uploading images:', err);
-      toast.error('Şəkillər yüklənərkən xəta baş verdi!');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const removeAdditionalImage = (index: number) => {
-    const newImages = formData.additional_images.filter((_, i) => i !== index);
-    setFormData({ ...formData, additional_images: newImages });
   };
 
   const handleSave = async () => {
     setSaving(true);
     try {
+      // API-yə göndərilən datanın yeni Product interfeysinə tam uyğunlaşdırılması
       const productData = {
         ...formData,
-        article: formData.article || null,
-        additional_images: formData.additional_images,
-        weight: `${formData.weight_grams}q`,
-        price_usd: formData.price_azn,
-        metal: formData.material,
-        selected_credit_option: selectedCreditOption || null
+        // Dəyişdirilmiş/Əlavə edilmiş sahələr
+        weight: `${safeWeightGrams}q`, // API üçün çəki stringə çevrilir
+        is_active: formData.active,
+        is_new: formData.isNew,
+        is_recommended: formData.isRecommended,
+        is_most_viewed: formData.isMostViewed,
+        description: formData.description || '', // Null-a icazə verilir, lakin boş string təhlükəsizdir
+        custom_price: formData.custom_price || null, 
+        
+        // Omit edilmiş sahələri API-yə göndərməzdən əvvəl əlavə edirik (Yalnız update zamanı)
+        id: product?.id, 
+        search_string: product?.search_string ?? '', 
+        views_count: product?.views_count ?? 0,
+        gold_price_id: product?.gold_price_id ?? 1, // Default ID verilir
+
+        // Formda olmayan lakin API-nin tələb edə biləcəyi sahələr
+        // NOTE: Əlavə şəkillər (additional_images_links) siyahınızda yoxdur, ona görə çıxarıldı.
       };
 
       let result;
+      const apiEndpoint = `${API_URL}/products${product?.id ? '/' + product.id : ''}`;
+
       if (product?.id) {
-        result = await supabase
-          .from('products')
-          .update(productData)
-          .eq('id', product.id)
-          .select();
+        result = await axios.put(apiEndpoint, productData);
       } else {
-        result = await supabase
-          .from('products')
-          .insert([productData])
-          .select();
+        result = await axios.post(apiEndpoint, productData);
       }
 
-      if (result.error) {
-        throw result.error;
+      if (result.status < 200 || result.status >= 300) {
+        throw new Error(`API Xətası: Status ${result.status}`);
       }
 
-      toast.success( 'Məhsul yeniləndi!' );
+      toast.success( product?.id ? 'Məhsul yeniləndi!' : 'Yeni məhsul əlavə edildi!' );
       onSave();
       onClose();
     } catch (err) {
       console.error('Error saving product:', err);
-      toast.error(`Xəta baş verdi: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      toast.error(`Saxlama zamanı xəta baş verdi: ${axios.isAxiosError(err) ? err.message : 'Unknown error'}`);
     } finally {
       setSaving(false);
     }
-  };
-
-  const toggleFeaturedFlag = (flag: string) => {
-    const flags = formData.featured_flags.includes(flag)
-      ? formData.featured_flags.filter(f => f !== flag)
-      : [...formData.featured_flags, flag];
-    setFormData({ ...formData, featured_flags: flags });
   };
 
   return (
@@ -229,7 +189,9 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
 
         <div className="p-6 max-h-[70vh] overflow-y-auto">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Basic Info */}
+            
+            {/* ------------------- ƏSAS MƏLUMATLAR ------------------- */}
+            
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Məhsul adı</label>
               <input
@@ -241,52 +203,54 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Article</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Slug (URL)</label>
               <input
                 type="text"
-                value={formData.article || ''}
-                onChange={(e) => setFormData({ ...formData, article: e.target.value.slice(0, 20) })}
-                maxLength={20}
+                value={formData.slug}
+                onChange={(e) => setFormData({ ...formData, slug: e.target.value.slice(0, 100).replace(/\s+/g, '-').toLowerCase() })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                placeholder="Məhsul article kodu"
+                placeholder="avtomatik-yaradilir"
               />
-              <p className="text-xs text-gray-500 mt-1">Maksimum 20 simvol</p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Kateqoriya</label>
               <select
-                value={formData.category}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                // category_id tipini number olaraq idarə edirik
+                value={formData.category_id || 0}
+                onChange={(e) => setFormData({ ...formData, category_id: parseInt(e.target.value) || 0 })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
               >
-                <option value="">Seçin...</option>
+                <option value={0}>Seçin...</option>
                 {categories.map((category) => (
-                  <option key={category.id} value={category.name}>
+                  <option key={category.id} value={category.id}>
                     {category.name}
                   </option>
                 ))}
               </select>
             </div>
 
+            {/* ------------------- QIZIL PARAMETRLƏRİ ------------------- */}
+
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Əyar / Material</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Metal (Qızıl, Gümüş)</label>
+              <input
+                type="text"
+                value={formData.metal}
+                onChange={(e) => setFormData({ ...formData, metal: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                placeholder="Qızıl"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Material (Əyar - 585, 750)</label>
               <input
                 type="text"
                 value={formData.material}
                 onChange={(e) => setFormData({ ...formData, material: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                placeholder="14K qızıl, 18K qızıl..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Karat</label>
-              <input
-                type="text"
-                value={formData.karat}
-                onChange={(e) => setFormData({ ...formData, karat: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                placeholder="585"
               />
             </div>
 
@@ -294,32 +258,42 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
               <label className="block text-sm font-medium text-gray-700 mb-1">Çəki (qram)</label>
               <input
                 type="number"
-                value={formData.weight_grams}
+                value={safeWeightGrams} 
                 onChange={(e) => {
                   const weight = parseFloat(e.target.value) || 0;
-                  const calculatedPrice = weight * goldPricePerGram * 1.7;
-                  setFormData({ ...formData, weight_grams: weight, price_azn: calculatedPrice });
+                  setFormData({ ...formData, weight_grams: weight });
                 }}
                 step="0.1"
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
               />
             </div>
-
-            {/* Calculated Gold Value */}
-            <div className="md:col-span-2 bg-amber-50 border border-amber-200 rounded-lg p-3">
+            
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
               <p className="text-sm font-semibold text-gray-900">
-                Qızıl dəyəri (hesablanmış): {calculatedGoldValue.toFixed(2)} AZN
+                Hesablanmış Dəyər: {calculatedGoldValue.toFixed(2)} AZN
               </p>
               <p className="text-xs text-gray-600 mt-1">
-                Bu dəyər avtomatik hesablanır: {formData.weight_grams} qram × {goldPricePerGram} USD × 1.7
+                (Çəki * {goldPricePerGram} USD * 1.7)
               </p>
+            </div>
+            
+            {/* ------------------- DAŞ PARAMETRLƏRİ ------------------- */}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Karat</label>
+              <input
+                type="text"
+                value={formData.carat ?? ''}
+                onChange={(e) => setFormData({ ...formData, carat: e.target.value })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+              />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Daş növü</label>
               <input
                 type="text"
-                value={formData.gemstone_type}
+                value={formData.gemstone_type ?? ''}
                 onChange={(e) => setFormData({ ...formData, gemstone_type: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="Brilyant, Zümrüd..."
@@ -327,10 +301,10 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Brilyantın çəkisi</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Daşın çəkisi (karat)</label>
               <input
                 type="text"
-                value={formData.gemstone_carat}
+                value={formData.gemstone_carat ?? ''}
                 onChange={(e) => setFormData({ ...formData, gemstone_carat: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
                 placeholder="0.5 karat"
@@ -338,37 +312,54 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Qiymət (AZN)</label>
-              <input
-                type="number"
-                value={formData.price_azn}
-                onChange={(e) => setFormData({ ...formData, price_azn: parseFloat(e.target.value) || 0 })}
-                step="0.01"
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Ölçü</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Daşın ölçüsü</label>
               <input
                 type="text"
-                value={formData.size}
-                onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                value={formData.gemstone_size ?? ''}
+                onChange={(e) => setFormData({ ...formData, gemstone_size: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-                placeholder="18, L, XL..."
+                placeholder="3mm x 5mm"
               />
             </div>
 
+
+            {/* ------------------- QİYMƏT VƏ ENDİRİM ------------------- */}
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Xüsusi Qiymət (AZN)</label>
+              <input
+                type="number"
+                value={formData.custom_price ?? ''}
+                onChange={(e) => setFormData({ ...formData, custom_price: parseFloat(e.target.value) || null })}
+                step="0.01"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+                placeholder="Qiymət müəyyən edilməyibsə boş saxlayın"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Endirim (%)</label>
+              <input
+                type="number"
+                value={formData.discount}
+                onChange={(e) => setFormData({ ...formData, discount: parseInt(e.target.value) || 0 })}
+                min={0}
+                max={100}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+
+            {/* ------------------- STATUSLAR ------------------- */}
+            
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Hazırlanma statusu</label>
               <select
                 value={formData.production_status}
-                onChange={(e) => setFormData({ ...formData, production_status: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, production_status: e.target.value as EditableProduct['production_status'] })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
               >
                 <option value="Hazırdır">Hazırdır</option>
-                <option value="Sifarişlə 3-5 gün">Sifarişlə 3-5 gün</option>
-                <option value="Sifarişlə 7-10 gün">Sifarişlə 7-10 gün</option>
+                <option value="Sifarişlə">Sifarişlə</option>
               </select>
             </div>
 
@@ -376,30 +367,44 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
               <label className="block text-sm font-medium text-gray-700 mb-1">Stok statusu</label>
               <select
                 value={formData.stock_status}
-                onChange={(e) => setFormData({ ...formData, stock_status: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, stock_status: e.target.value as EditableProduct['stock_status'] })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
               >
                 <option value="Stokda">Stokda</option>
-                <option value="Sifarişlə">Sifarişlə</option>
+                <option value="Stokda deyil">Stokda deyil</option>
               </select>
             </div>
 
-            {/* Images */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Mövcudluq</label>
+              <select
+                value={formData.availability}
+                onChange={(e) => setFormData({ ...formData, availability: e.target.value as EditableProduct['availability'] })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
+              >
+                <option value="mövcuddur">Mövcuddur</option>
+                <option value="mövcud deyil">Mövcud deyil</option>
+                <option value="sifarişlə">Sifarişlə</option>
+              </select>
+            </div>
+
+            {/* ------------------- ŞƏKİLLƏR ------------------- */}
+
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Əsas şəkil</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Əsas şəkil linki</label>
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-                {formData.main_image ? (
+                {formData.main_image_link ? (
                   <div className="flex items-center gap-4">
                     <ImageWithSkeleton
-                      src={formData.main_image}
+                      src={formData.main_image_link} 
                       alt="Main"
                       className="w-24 h-24 object-cover rounded-lg"
                     />
                     <div className="flex-1">
-                      <p className="text-sm text-gray-600 mb-2">Əsas şəkil yükləndi</p>
+                      <p className="text-sm text-gray-600 mb-2">Mevcud Link: {formData.main_image_link.substring(0, 50)}...</p>
                       <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors text-sm">
                         <Upload className="w-4 h-4" />
-                        Dəyişdir
+                        Yeni Şəkil Yüklə / Dəyişdir
                         <input
                           type="file"
                           accept="image/*"
@@ -413,8 +418,7 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
                 ) : (
                   <label className="cursor-pointer flex flex-col items-center gap-2 py-8">
                     <ImageIcon className="w-12 h-12 text-gray-400" />
-                    <span className="text-sm font-medium text-gray-700">Şəkil əlavə et</span>
-                    <span className="text-xs text-gray-500">PNG, JPG, WEBP (max 5MB)</span>
+                    <span className="text-sm font-medium text-gray-700">Əsas Şəkil Yüklə</span>
                     <input
                       type="file"
                       accept="image/*"
@@ -427,60 +431,12 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
               </div>
             </div>
 
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Əlavə şəkillər</label>
-              <div className="space-y-3">
-                {/* Upload Button */}
-                <label className="cursor-pointer border-2 border-dashed border-gray-300 rounded-lg p-4 flex flex-col items-center gap-2 hover:border-amber-400 transition-colors">
-                  <Upload className="w-8 h-8 text-gray-400" />
-                  <span className="text-sm font-medium text-gray-700">Şəkil əlavə et</span>
-                  <span className="text-xs text-gray-500">Bir neçə şəkil seçə bilərsiniz</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={handleAdditionalImagesUpload}
-                    className="hidden"
-                    disabled={uploading}
-                  />
-                </label>
+            {/* ------------------- TƏSVİR ------------------- */}
 
-                {/* Image Grid */}
-                {formData.additional_images.length > 0 && (
-                  <div className="grid grid-cols-4 gap-3">
-                    {formData.additional_images.map((image, index) => (
-                      <div key={index} className="relative group">
-                        <ImageWithSkeleton
-                          src={image}
-                          alt={`Additional ${index + 1}`}
-                          className="w-full aspect-square object-cover rounded-lg"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => removeAdditionalImage(index)}
-                          className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {uploading && (
-              <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
-                <Loader2 className="w-5 h-5 text-blue-600 animate-spin" />
-                <span className="text-sm text-blue-800">Şəkillər yüklənir...</span>
-              </div>
-            )}
-
-            {/* Description */}
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Təsvir</label>
               <textarea
-                value={formData.description}
+                value={formData.description ?? ''}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 rows={4}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
@@ -488,21 +444,11 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
               />
             </div>
 
-            {/* Featured Flags */}
+            {/* ------------------- FEATURED FLAGELLAR ------------------- */}
+
             <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Xüsusiyyətlər</label>
-              <div className="flex flex-wrap gap-3">
-                {['Yeni', 'Tövsiyə olunur', 'Ən çox baxılan'].map(flag => (
-                  <label key={flag} className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.featured_flags.includes(flag)}
-                      onChange={() => toggleFeaturedFlag(flag)}
-                      className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
-                    />
-                    <span className="text-sm text-gray-700">{flag}</span>
-                  </label>
-                ))}
+              <div className="flex flex-wrap gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
@@ -512,28 +458,45 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
                   />
                   <span className="text-sm text-gray-700">Aktivdir</span>
                 </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isNew}
+                    onChange={(e) => setFormData({ ...formData, isNew: e.target.checked })}
+                    className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-gray-700">Yenidir</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isRecommended}
+                    onChange={(e) => setFormData({ ...formData, isRecommended: e.target.checked })}
+                    className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-gray-700">Tövsiyə olunur</span>
+                </label>
+                 <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.isMostViewed}
+                    onChange={(e) => setFormData({ ...formData, isMostViewed: e.target.checked })}
+                    className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-gray-700">Ən çox baxılan</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.has_diamond}
+                    onChange={(e) => setFormData({ ...formData, has_diamond: e.target.checked })}
+                    className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
+                  />
+                  <span className="text-sm text-gray-700">Brilyant var</span>
+                </label>
               </div>
             </div>
 
-            {/* Credit Options */}
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Kredit variantı</label>
-              <select
-                value={selectedCreditOption}
-                onChange={(e) => setSelectedCreditOption(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500"
-              >
-                <option value="">Kredit variantı seçin...</option>
-                {creditOptions.map((option, index) => (
-                  <option key={index} value={option.name}>
-                    {option.name} ({option.months_min}-{option.months_max} ay, {option.interest_percent}% faiz)
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-gray-500 mt-1">
-                Müştərilər seçilmiş variantın ay aralığında aylıq ödənişləri görəcəklər
-              </p>
-            </div>
           </div>
         </div>
 

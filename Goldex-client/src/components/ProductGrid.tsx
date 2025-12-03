@@ -1,22 +1,16 @@
 import { useState, useEffect } from 'react';
-import { supabase, Product } from '../lib/supabase';
+import axios from 'axios'; // ⬅️ axios import edildi
 import { ProductCard } from './ProductCard';
 import { Loader2 } from 'lucide-react';
+import { Product, ProductGridProps } from '../types/products/product.type';
 
-interface ProductGridProps {
-  onViewDetails: (id: string) => void;
-  selectedCategory: string;
-  onCategoryChange: (category: string) => void;
-  // headerHeight silindi
-}
+const API_URL = import.meta.env.VITE_API_URL;
 
 export function ProductGrid({
   onViewDetails,
   selectedCategory,
-  // onCategoryChange, // Artıq bu komponentin içində istifadə edilmir, lakin prop kimi saxlamaq olar.
 }: ProductGridProps) {
   const [products, setProducts] = useState<Product[]>([]);
-  // const [categories, setCategories] = useState<string[]>([]); // Silindi
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,20 +19,36 @@ export function ProductGrid({
   }, []);
 
   async function fetchProducts() {
+    setLoading(true); 
+    setError(null);
+
     try {
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .eq('active', true)
-        .order('created_at', { ascending: false });
+      const response = await axios.get<Product[]>(`${API_URL}/products`);
+      const data = response.data;
 
-      if (error) throw error;
-
-      setProducts(data || []);
-
-      // Kateqoriya məntiqi silindi
+      setProducts(data || []); 
+      
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Məhsulları yükləmək mümkün olmadı');
+      let errorMessage = 'Məhsulları yükləmək mümkün olmadı';
+      
+      if (axios.isAxiosError(err)) {
+        // HTTP cavabı varsa (məsələn, 404, 500)
+        if (err.response) {
+          errorMessage = `Server Xətası: ${err.response.status} - ${err.response.statusText}`;
+        } 
+        // Sorğu göndərilib, lakin cavab gəlməyibsə
+        else if (err.request) {
+          errorMessage = 'Serverə qoşulma xətası. Şəbəkə problemi ola bilər.';
+        } 
+        // Başqa bir xəta
+        else {
+          errorMessage = err.message;
+        }
+      } else if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -56,8 +66,6 @@ export function ProductGrid({
     );
   }
 
-  // ... (Error və products.length === 0 yoxlamaları)
-
   if (error) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -69,16 +77,24 @@ export function ProductGrid({
     );
   }
 
-  if (products.length === 0) {
+  if (products.length === 0 && !selectedCategory) {
     return (
       <div className="flex items-center justify-center min-h-96">
         <p className="text-gray-600">Məhsul yoxdur</p>
       </div>
     );
   }
+  
+  if (filteredProducts.length === 0 && selectedCategory) {
+    return (
+      <div className="flex items-center justify-center min-h-96">
+        <p className="text-gray-600">Bu kateqoriyada məhsul yoxdur</p>
+      </div>
+    );
+  }
 
 
-  const handleViewDetails = (id: string) => {
+  const handleViewDetails = (id: number) => {
     onViewDetails(id);
   };
 

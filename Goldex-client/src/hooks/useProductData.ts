@@ -1,110 +1,101 @@
 import { useState, useEffect } from 'react';
-// Zəhmət olmasa bu importların düzgün path-də olduğuna əmin olun.
-import { supabase, Product } from '../lib/supabase'; 
+import axios from 'axios';
+import { CreditSettings } from '../types/credits/credit.type';
+import { Product, ProductData } from '../types/products/product.type';
 
-export interface CreditSettings {
-  interestRate: number;
-  minMonths: number;
-  maxMonths: number;
-  minPrice: number;
-  maxPrice: number;
-}
+const API_URL = import.meta.env.VITE_API_URL; 
 
-const ALL_AVAILABLE_MONTHS = [3, 6, 9, 12, 18, 24];
+const ALL_AVAILABLE_MONTHS = [3, 6, 12, 18];
 
-interface ProductData {
-  product: Product | null;
-  creditSettings: CreditSettings | null;
-  availableMonths: number[];
-  loading: boolean;
-  error: string | null;
-  priceAZN: number;
+interface SettingItem {
+    key: string;
+    value: string;
 }
 
 export function useProductData(productId: string): ProductData {
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [creditSettings, setCreditSettings] = useState<CreditSettings | null>(null);
-  const [availableMonths, setAvailableMonths] = useState<number[]>([]);
+    const [product, setProduct] = useState<Product | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [creditSettings, setCreditSettings] = useState<CreditSettings | null>(null);
+    const [availableMonths, setAvailableMonths] = useState<number[]>([]);
 
-  // qiyməti hesablayırıq
-  const priceAZN = product ? (product.price_azn || product.price_usd * 1.7 || 0) : 0;
+    const priceAZN = product ? (product.price_azn || (product.price_usd || 0) * 1.7 || 0) : 0;
 
-  useEffect(() => {
-    if (!productId) {
-      setError('Məhsul ID-si təyin edilməyib.');
-      setLoading(false);
-      return;
-    }
-
-    async function fetchData() {
-      setLoading(true);
-      setError(null);
-
-      try {
-        // Məhsulu çəkmə
-        const { data: productData, error: productError } = await supabase
-          .from('products')
-          .select('*')
-          .eq('id', productId)
-          .maybeSingle();
-
-        if (productError) throw productError;
-        setProduct(productData);
-
-        if (!productData) {
-            setError('Məhsul tapılmadı');
+    useEffect(() => {
+        if (!productId) {
+            setError('Məhsul ID-si təyin edilməyib.');
+            setLoading(false);
+            return;
         }
 
-        // Ayarları çəkmə
-        const { data: settingsData } = await supabase
-          .from('settings')
-          .select('key, value')
-          .in('key', [
-            'credit_interest_rate', 'credit_min_months', 'credit_max_months', 
-            'credit_min_price', 'credit_max_price',
-          ]);
+        async function fetchProductData() {
+            try {
+                const productResponse = await axios.get<Product>(`${API_URL}/products/${productId}`);
+                const productData = productResponse.data;
 
-        if (settingsData) {
-          const newSettings: Partial<CreditSettings> = {};
-          // Ayarları parse etmə məntiqi eynidir...
-          settingsData.forEach((setting) => {
-            const value = parseFloat(setting.value);
-            // ... (düzgün switch case məntiqiniz)
-            switch (setting.key) {
-                case 'credit_interest_rate': newSettings.interestRate = value; break;
-                case 'credit_min_months': newSettings.minMonths = value; break;
-                case 'credit_max_months': newSettings.maxMonths = value; break;
-                case 'credit_min_price': newSettings.minPrice = value; break;
-                case 'credit_max_price': newSettings.maxPrice = value; break;
+                if (productData && productData.id) {
+                    setProduct(productData);
+                } else {
+                    setError('Məhsul tapılmadı');
+                    setProduct(null);
+                }
+
+                // 2. Kredit Ayarlarını çəkmə (axios ilə, /credit_options endpoint-i fərz olunur)
+                // Bu endpoint-in SettingItem[] massivi qaytardığını fərz edirik
+                const settingsResponse = await axios.get<SettingItem[]>(`${API_URL}/credit_options`);
+                const settingsData = settingsResponse.data;
+
+                if (settingsData) {
+                    const newSettings: Partial<CreditSettings> = {};
+                    
+                    // Ayarları parse etmə
+                    settingsData.forEach((setting) => {
+                        const value = parseFloat(setting.value);
+                        switch (setting.key) {
+                            case 'credit_interest_rate': newSettings.interestRate = value; break;
+                            case 'credit_min_months': newSettings.minMonths = value; break;
+                            case 'credit_max_months': newSettings.maxMonths = value; break;
+                            case 'credit_min_price': newSettings.minPrice = value; break;
+                            case 'credit_max_price': newSettings.maxPrice = value; break;
+                        }
+                    });
+
+                    // Bütün vacib sahələrin doldurulmasını yoxlayırıq
+                    const isComplete = newSettings.interestRate !== undefined && newSettings.minMonths !== undefined && 
+                                       newSettings.maxMonths !== undefined && newSettings.minPrice !== undefined && 
+                                       newSettings.maxPrice !== undefined;
+                    
+                    if (isComplete) {
+                        const finalSettings = newSettings as CreditSettings;
+                        setCreditSettings(finalSettings);
+
+                        // Mövcud kredit aylarını filtrləyirik
+                        const months = ALL_AVAILABLE_MONTHS.filter(month => 
+                            month >= finalSettings.minMonths && month <= finalSettings.maxMonths
+                        );
+                        setAvailableMonths(months);
+                    }
+                }
+            } catch (err) {
+                let errorMessage = 'Məlumat yüklənməsi xətası';
+                 if (axios.isAxiosError(err) && err.response) {
+                    // 404 xətası məhsul tapılmaması deməkdir
+                    if (err.response.status === 404) {
+                        errorMessage = 'Məhsul tapılmadı (404)';
+                    } else {
+                        errorMessage = `API Xətası: ${err.response.status}`;
+                    }
+                } else if (err instanceof Error) {
+                     errorMessage = err.message;
+                }
+                setError(errorMessage);
+            } finally {
+                setLoading(false);
             }
-          });
-
-          const isComplete = newSettings.interestRate !== undefined && newSettings.minMonths !== undefined && 
-                           newSettings.maxMonths !== undefined && newSettings.minPrice !== undefined && 
-                           newSettings.maxPrice !== undefined;
-          
-          if (isComplete) {
-            const finalSettings = newSettings as CreditSettings;
-            setCreditSettings(finalSettings);
-            
-            // Mövcud kredit aylarını filtrləyirik
-            const months = ALL_AVAILABLE_MONTHS.filter(month => 
-              month >= finalSettings.minMonths && month <= finalSettings.maxMonths
-            );
-            setAvailableMonths(months);
-          }
         }
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Məlumat yüklənməsi xətası');
-      } finally {
-        setLoading(false);
-      }
-    }
 
-    fetchData();
-  }, [productId]);
+        fetchProductData();
+    }, [productId]);
 
-  return { product, creditSettings, availableMonths, loading, error, priceAZN };
+    return { product, creditSettings, availableMonths, loading, error, priceAZN };
 }

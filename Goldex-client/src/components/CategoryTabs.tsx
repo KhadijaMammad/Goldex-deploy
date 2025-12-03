@@ -1,15 +1,7 @@
-// src/components/CategoryTabs.tsx
-
-interface CategoryTabsProps {
-  categories: string[];
-  selectedCategory: string;
-  onCategorySelect: (category: string) => void;
-  headerHeight: number; // Yapışqan pozisiya üçün
-}
+import { CategoryTabsProps } from "../types/categories/category.type";
 
 export function CategoryTabs({ categories, selectedCategory, onCategorySelect, headerHeight }: CategoryTabsProps) {
   return (
-    // Yapışqan zolaq (Navbar altındakı mövqeyi headerHeight ilə təmin edilir)
     <div
       className="sticky z-20 bg-gray-100 shadow-inner border-b border-gray-300 mb-6 transition-all duration-200"
       style={{ top: `${headerHeight}px` }}

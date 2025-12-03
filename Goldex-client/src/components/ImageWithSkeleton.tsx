@@ -1,11 +1,5 @@
 import { useState } from 'react';
-
-interface ImageWithSkeletonProps {
-  src: string;
-  alt: string;
-  className?: string;
-  skeletonClassName?: string;
-}
+import { ImageWithSkeletonProps } from '../types/images/image.type';
 
 export function ImageWithSkeleton({ 
   src, 

@@ -1,4 +1,4 @@
-import { CreditSettings } from '../hooks/useProductData'; 
+import { CreditSettings } from "../types/credits/credit.type";
 
 // Simple Interest hesablama məntiqi
 export const calculateMonthlyPayment = (months: number, price: number, settings: CreditSettings): number => {
