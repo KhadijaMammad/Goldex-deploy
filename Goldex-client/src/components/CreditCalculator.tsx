@@ -3,42 +3,30 @@ import axios from 'axios'; // ⬅️ axios import edildi
 import { Calculator, Loader2 } from 'lucide-react';
 import { ImageWithSkeleton } from './ImageWithSkeleton';
 
-// API URL-i üçün env dəyişənini fərz edirik
 const API_URL = import.meta.env.VITE_API_URL;
 
-// Tənzimləmə obyektlərinin tipi
 interface SettingItem {
     key: string;
     value: string;
 }
-
-// TypeScript xətasını aradan qaldırmaq üçün:
 type CalculatedPayments = Record<number, number>;
 
 export function CreditCalculator() {
     const [productPrice, setProductPrice] = useState<string>('1000');
-    // months burada seçilmiş ay müddəti kimi istifadə olunur, minimum dəyər kimi deyil.
     const [months, setMonths] = useState<number>(6); 
     const [interestRate, setInterestRate] = useState<number>(15);
-
     const [minPrice, setMinPrice] = useState<number>(100);
     const [maxPrice, setMaxPrice] = useState<number>(10000);
-    // Maksimum ay (bu dəyişən creditTerms-i filtrləmək üçün istifadə olunmur,
-    // lakin setting-dən gəlirsə onu qeyd etmək yaxşıdır)
     const [maxMonthsSetting, setMaxMonthsSetting] = useState<number>(18); 
     const [loading, setLoading] = useState(true);
-
-    // Sabit təklif olunan ay müddətləri (maksimum ay setting-ə görə filtrlənməmiş)
-    const ALL_CREDIT_TERMS = [3, 6, 12, 18, 24]; 
+    const ALL_CREDIT_TERMS = [3, 6, 12, 18]; 
 
     useEffect(() => {
         fetchSettings();
     }, []);
 
-    // Parametrləri API-dən çəkmə
     async function fetchSettings() {
         try {
-            // ⬅️ Supabase GET sorğusu axios ilə əvəz edildi
             const response = await axios.get<SettingItem[]>(`${API_URL}/credit_options`);
             const data = response.data;
 
@@ -49,7 +37,6 @@ export function CreditCalculator() {
                             setInterestRate(parseFloat(setting.value));
                             break;
                         case 'credit_min_months':
-                            // setMonths(parseInt(setting.value)); // Artıq seçilmiş ay üçün istifadə olunur
                             break;
                         case 'credit_max_months':
                             setMaxMonthsSetting(parseInt(setting.value));
@@ -70,37 +57,24 @@ export function CreditCalculator() {
         }
     }
 
-    // Yalnız API-dən gələn maksimum ay müddətinə uyğun olan müddətləri filterlə
     const creditTerms = useMemo(() => {
-        // Yalnız maxMonthsSetting-dən kiçik və ya bərabər olan müddətləri saxlayırıq
         return ALL_CREDIT_TERMS.filter(term => term <= maxMonthsSetting);
     }, [maxMonthsSetting]);
 
 
-    // Sadə faiz əsasında aylıq ödənişi hesablamaq
     const calculateMonthlyPaymentForTerm = (price: string, rate: number, term: number) => {
         const parsedPrice = parseFloat(price);
-        // Qiymətin kredit şərtlərinə uyğun olub olmadığını yoxlayırıq
         if (isNaN(parsedPrice) || parsedPrice < minPrice || parsedPrice > maxPrice) return 0;
-
-        // Faiz dərəcəsi (faiz/100)
         const annualRateDecimal = rate / 100; 
-        
-        // TotalAmount = Principal * (1 + AnnualRate * (Months / 12))
         const totalAmount = parsedPrice * (1 + annualRateDecimal * (term / 12)); 
-        
         return totalAmount / term;
     };
 
-    // Cari seçilmiş ay üçün aylıq ödəniş
     const monthlyPayment = useMemo(() => {
         return calculateMonthlyPaymentForTerm(productPrice, interestRate, months);
     }, [productPrice, interestRate, months, minPrice, maxPrice]);
-    
-    // Cari seçilmiş ay üçün ümumi ödəniş
-    const totalAmount = monthlyPayment * months;
+        const totalAmount = monthlyPayment * months;
 
-    // Bütün təklif olunan ay müddətləri üçün aylıq ödənişləri hesablamaq
     const calculatedPayments = useMemo(() => {
         return creditTerms.reduce((acc: CalculatedPayments, term: number) => {
             acc[term] = calculateMonthlyPaymentForTerm(productPrice, interestRate, term);

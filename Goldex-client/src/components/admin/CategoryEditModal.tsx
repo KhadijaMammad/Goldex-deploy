@@ -1,23 +1,18 @@
-// CategoryEditModal.tsx
-// (API_URL və Axios istifadə edilərək)
-
 import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import { X, Save, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast'; 
 
-// API URL-ni global olaraq götürürük
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface Category {
-    id?: string; // Yeni kateqoriya əlavə edərkən id yoxdur
+    id?: number; 
     name: string;
     material: string | null;
     display_order: number;
     active: boolean;
 }
 
-// Serverə göndəriləcək məlumatın tipi (id, created_at, updated_at xaric)
 type CategoryPayload = Omit<Category, 'id'>;
 
 interface CategoryEditModalProps {
@@ -40,9 +35,6 @@ export function CategoryEditModal({ category, onClose, onSave }: CategoryEditMod
     const [touched, setTouched] = useState<Record<string, boolean>>({});
 
     const isEditing = !!category?.id;
-    
-    // Məntiq CategoryEditModal.tsx-ın əvvəlki versiyası ilə eynidir (validation)
-    // Sadece Supabase əvəzinə Axios və API URL istifadə olunur.
 
     useEffect(() => {
         if (category) {
@@ -55,7 +47,6 @@ export function CategoryEditModal({ category, onClose, onSave }: CategoryEditMod
         }
     }, [category]);
     
-    // Validation funksiyaları (dəyişməz qalır)
     const validateField = useCallback((name: string, value: any): string => {
         switch (name) {
             case 'name':
@@ -104,7 +95,6 @@ export function CategoryEditModal({ category, onClose, onSave }: CategoryEditMod
         setErrors(prev => ({ ...prev, [name]: error }));
     };
 
-    // Yadda saxla əməliyyatı (API integration)
     const handleSave = async () => {
         if (!validateForm()) {
             toast.error('Zəhmət olmasa, xətaları düzəldin.');
@@ -113,19 +103,16 @@ export function CategoryEditModal({ category, onClose, onSave }: CategoryEditMod
 
         setSaving(true);
         try {
-            // Serverə göndərilən məlumatı təmizləyirik
             const payload: CategoryPayload = {
                 name: formData.name.trim(),
-                material: formData.material?.trim() || null, // Boş string yerinə null
+                material: formData.material?.trim() || null, 
                 display_order: formData.display_order,
                 active: formData.active,
             };
 
             if (isEditing) {
-                // PUT (Yeniləmə)
-                await axios.put(`${API_URL}/categories/${category.id}`, payload);
+                await axios.patch(`${API_URL}/categories/${category.id}`, payload);
             } else {
-                // POST (Yeni əlavə)
                 await axios.post(`${API_URL}/categories`, payload);
             }
 
@@ -140,7 +127,6 @@ export function CategoryEditModal({ category, onClose, onSave }: CategoryEditMod
         }
     };
     
-    // --- JSX (Görünüş və siniflər dəyişməz qalır) ---
 
     const getInputClassName = (fieldName: keyof Category) => {
         const baseClass = "w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors";
@@ -226,7 +212,6 @@ export function CategoryEditModal({ category, onClose, onSave }: CategoryEditMod
                     </div>
                 </div>
 
-                {/* Footer / Action buttons */}
                 <div className="flex items-center justify-end gap-3 p-6 border-t bg-gray-50">
                     <button
                         onClick={onClose}

@@ -1,4 +1,3 @@
-// ProductCard.tsx
 
 import { ProductCardProps } from "../types/products/product.type";
 
@@ -37,9 +36,9 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
   // sahələrinin mövcudluğunu fərz edirik (köhnə kodda da var idi).
 
   return (
-    <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-200">
+    <div className="bg-white rounded-lg w-[200px] shadow-md overflow-hidden hover:shadow-xl transition-shadow duration-300 border border-gray-200">
       <div
-        className="aspect-square overflow-hidden bg-gray-100 relative cursor-pointer"
+        className="aspect-square  overflow-hidden bg-gray-100 relative cursor-pointer"
         onClick={() => onViewDetails(product.id)}
       >
         <img
@@ -60,7 +59,7 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
         )}
       </div>
       <div className="p-4 pt-3">
-        <div className="flex items-start justify-between mb-1">
+        <div className="flex items-start  justify-between mb-1">
           <h3
             className="text-lg font-semibold text-gray-900 cursor-pointer hover:text-amber-600 transition-colors"
             onClick={() => onViewDetails(product.id)}
@@ -69,8 +68,7 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
           </h3>
         </div>
 
-        {/* category sahəsi yoxdur, category_id var. category sahəsini fərz edirik */}
-        <p className="text-xs text-gray-500 mb-3"> {product.name}</p>
+        <p className="text-xs text-gray-500 mb-3"> {product.category_name}</p>
 
         <div className="space-y-1 mb-3">
           <div className="flex justify-between text-sm">

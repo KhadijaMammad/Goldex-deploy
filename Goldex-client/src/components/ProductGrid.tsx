@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import axios from 'axios'; // ⬅️ axios import edildi
-import { ProductCard } from './ProductCard';
-import { Loader2 } from 'lucide-react';
-import { Product, ProductGridProps } from '../types/products/product.type';
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { ProductCard } from "./ProductCard";
+import { Loader2 } from "lucide-react";
+import { Product, ProductGridProps } from "../types/products/product.type";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -19,35 +19,29 @@ export function ProductGrid({
   }, []);
 
   async function fetchProducts() {
-    setLoading(true); 
+    setLoading(true);
     setError(null);
 
     try {
       const response = await axios.get<Product[]>(`${API_URL}/products`);
       const data = response.data;
 
-      setProducts(data || []); 
-      
+      setProducts(data || []);
     } catch (err) {
-      let errorMessage = 'Məhsulları yükləmək mümkün olmadı';
-      
+      let errorMessage = "Məhsulları yükləmək mümkün olmadı";
+
       if (axios.isAxiosError(err)) {
-        // HTTP cavabı varsa (məsələn, 404, 500)
         if (err.response) {
           errorMessage = `Server Xətası: ${err.response.status} - ${err.response.statusText}`;
-        } 
-        // Sorğu göndərilib, lakin cavab gəlməyibsə
-        else if (err.request) {
-          errorMessage = 'Serverə qoşulma xətası. Şəbəkə problemi ola bilər.';
-        } 
-        // Başqa bir xəta
-        else {
+        } else if (err.request) {
+          errorMessage = "Serverə qoşulma xətası. Şəbəkə problemi ola bilər.";
+        } else {
           errorMessage = err.message;
         }
       } else if (err instanceof Error) {
         errorMessage = err.message;
       }
-      
+
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -55,7 +49,7 @@ export function ProductGrid({
   }
 
   const filteredProducts = selectedCategory
-    ? products.filter(p => p.category === selectedCategory)
+    ? products.filter((p) => p.category === selectedCategory)
     : products;
 
   if (loading) {
@@ -84,7 +78,7 @@ export function ProductGrid({
       </div>
     );
   }
-  
+
   if (filteredProducts.length === 0 && selectedCategory) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -93,17 +87,27 @@ export function ProductGrid({
     );
   }
 
-
   const handleViewDetails = (id: number) => {
     onViewDetails(id);
   };
 
   return (
     <div>
-      {/* Products Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-1 md:gap-6">
-        {filteredProducts.map(product => (
-          <ProductCard key={product.id} product={product} onViewDetails={handleViewDetails} />
+      <div
+        className="grid 
+                   grid-cols-2        /* Kiçik ekranlar üçün 2 sütun */
+                   md:grid-cols-3     /* Orta ekranlar üçün 3 sütun */
+                   lg:grid-cols-4     /* Böyük ekranlar üçün mütləq 4 sütun */
+                   gap-3              /* Kartlar arasındakı boşluq (~12px) */
+                   p-2                /* Kənarlarda kiçik boşluq */
+        "
+      >
+        {filteredProducts.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            onViewDetails={handleViewDetails}
+          />
         ))}
       </div>
     </div>

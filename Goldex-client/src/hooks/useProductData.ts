@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
-import { CreditSettings } from '../types/credits/credit.type';
+import { CreditOptionDetail } from '../types/credits/credit.type';
 import { Product, ProductData } from '../types/products/product.type';
 
 const API_URL = import.meta.env.VITE_API_URL; 
@@ -16,7 +16,7 @@ export function useProductData(productId: string): ProductData {
     const [product, setProduct] = useState<Product | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [creditSettings, setCreditSettings] = useState<CreditSettings | null>(null);
+    const [creditSettings, setCreditSettings] = useState<CreditOptionDetail | null>(null);
     const [availableMonths, setAvailableMonths] = useState<number[]>([]);
 
     const priceAZN = product ? (product.price_azn || (product.price_usd || 0) * 1.7 || 0) : 0;
@@ -46,7 +46,7 @@ export function useProductData(productId: string): ProductData {
                 const settingsData = settingsResponse.data;
 
                 if (settingsData) {
-                    const newSettings: Partial<CreditSettings> = {};
+                    const newSettings: Partial<CreditOptionDetail> = {};
                     
                     // Ayarları parse etmə
                     settingsData.forEach((setting) => {
@@ -66,12 +66,11 @@ export function useProductData(productId: string): ProductData {
                                        newSettings.maxPrice !== undefined;
                     
                     if (isComplete) {
-                        const finalSettings = newSettings as CreditSettings;
+                        const finalSettings = newSettings as CreditOptionDetail;
                         setCreditSettings(finalSettings);
 
-                        // Mövcud kredit aylarını filtrləyirik
                         const months = ALL_AVAILABLE_MONTHS.filter(month => 
-                            month >= finalSettings.minMonths && month <= finalSettings.maxMonths
+                            month >= finalSettings.min_months && month <= finalSettings.max_months
                         );
                         setAvailableMonths(months);
                     }

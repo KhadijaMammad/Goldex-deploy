@@ -32,8 +32,8 @@ export function GoldPriceSection() {
     async function fetchGoldPrice() {
         setLoading(true);
         try {
-            const response = await axios.get<GoldPriceSetting>(`${API_URL}/gold_prices`);
-            const goldPriceData = response.data;
+            const response = await axios.get<GoldPriceSetting[]>(`${API_URL}/gold_prices`);
+            const goldPriceData = response.data?.[0];
 
             if (goldPriceData && goldPriceData.id) {
                 setGoldPrice(goldPriceData.price_per_gram);

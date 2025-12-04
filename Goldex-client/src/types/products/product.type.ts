@@ -9,10 +9,10 @@ export interface Product {
     description: string | null;
     slug: string;
     category_id: number;
-    metal: string; // Məsələn: "Qızıl"
-    material: string; // Məsələn: "585" (Əyar)
+    metal: string; 
+    material: string; 
     carat: string | null;
-    weight: string; // Məsələn: "3.5g"
+    weight: string; 
     main_image_link: string;
     gemstone_type: string | null;
     gemstone_carat: string | null;
@@ -29,8 +29,8 @@ export interface Product {
     is_most_viewed: boolean;
     created_at: string;
     updated_at: string;
-    custom_price: number | null; // AZN-də xüsusi qiymət
-    gold_price_id: number; // Qızılın bir qramının qiyməti ID-si
+    custom_price: number | null; 
+    gold_price_id: number; 
 }
 
 export interface ProductCardProps {
@@ -46,9 +46,9 @@ export interface Setting {
 }
 
 export interface ProductGridProps {
-  onViewDetails: (id: number) => void;
-  selectedCategory: string;
-  onCategoryChange: (category: string) => void;
+    onViewDetails: (productId: number) => void;
+    selectedCategory: number | null; 
+    onCategoryChange: (categoryId: number | null) => void;
 }
 
 export interface ProductDetailProps {

@@ -1,17 +1,13 @@
-// CategoriesSection.tsx
-// (API_URL və Axios istifadə edilərək)
-
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Plus, Edit2, Trash2, Loader2 } from 'lucide-react';
-import { CategoryEditModal } from './CategoryEditModal'; // Eyni qovluq olduğu üçün './'
+import { CategoryEditModal } from './CategoryEditModal'; 
 import toast from 'react-hot-toast'; 
 
-// API URL-ni global olaraq götürürük
 const API_URL = import.meta.env.VITE_API_URL;
 
 interface Category {
-    id: string; 
+    id: number; 
     name: string;
     material: string | null; 
     display_order: number;
@@ -33,10 +29,8 @@ export function CategoriesSection() {
     const fetchCategories = async () => {
         setLoading(true);
         try {
-            // API_URL/categories endpoint-inə müraciət edirik
             const response = await axios.get<Category[]>(`${API_URL}/categories`);
 
-            // Material null ola biləcəyi üçün tipi dəqiqləşdiririk
             setCategories(response.data.map(cat => ({ ...cat, material: cat.material || null })) || []);
         } catch (err) {
             console.error('Error fetching categories:', err);
@@ -46,13 +40,12 @@ export function CategoriesSection() {
         }
     };
 
-    const handleDelete = async (id: string, name: string) => {
+    const handleDelete = async (id: number, name: string) => {
         if (!confirm(`"${name}" kateqoriyasını silmək istədiyinizdən əminsiniz?`)) {
             return;
         }
 
         try {
-            // DELETE sorğusu
             await axios.delete(`${API_URL}/categories/${id}`);
 
             toast.success('Kateqoriya uğurla silindi!');
@@ -79,7 +72,7 @@ export function CategoriesSection() {
     };
 
     const handleModalSave = () => {
-        fetchCategories(); // Məlumat dəyişdikdən sonra siyahını yeniləyirik
+        fetchCategories(); 
     };
 
     if (loading) {
@@ -90,7 +83,6 @@ export function CategoriesSection() {
         );
     }
 
-    // --- JSX (Görünüş hissəsi dəyişməz qalır) ---
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">

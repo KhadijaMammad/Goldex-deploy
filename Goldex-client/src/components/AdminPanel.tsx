@@ -8,28 +8,18 @@ import { Product } from '../types/products/product.type';
 import { AdminPanelProps } from '../types/admin/admin.type';
 import { GoldPriceEntry } from '../types/gold/gold.type';
 
-// API URL-i üçün env dəyişənini fərz edirik
 const API_URL = import.meta.env.VITE_API_URL;
 
-// Product tipinin bəzi sahələrini dəyişdiririk
 type ProductPayload = Omit<Product, 'id' | 'created_at' | 'viewed_count'>;
 
 export function AdminPanel({ onBack }: AdminPanelProps) {
-    // 1. STATE BƏYANLARI (BÜTÜN 'cannot find name' xətalarını həll edir)
     const [products, setProducts] = useState<Product[]>([]);
     const [goldPrice, setGoldPrice] = useState<string>('60'); 
     const [loading, setLoading] = useState(true);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isAddingNew, setIsAddingNew] = useState(false);
-    
-    // Əlavə etdiyiniz state-i istifadə etməyəcəyik, çünki POST/PUT əməliyyatları ID-ni serverdən alır
-    // const [latestGoldPriceId, setLatestGoldPriceId] = useState<number | null>(null); 
-    
-    // Şəkil yükləmə state-ləri
     const [uploadingMain, setUploadingMain] = useState(false);
     const [uploadingAdditional, setUploadingAdditional] = useState(false);
-    
-    // Əlavə şəkillərin URL-lərini yadda saxlayan text sahəsi
     const [additionalImagesInput, setAdditionalImagesInput] = useState('');
 
     const emptyProduct: ProductPayload = {
@@ -49,7 +39,6 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
         main_image_link: '', 
         additional_images_links: [], 
         has_diamond: false,
-        // Düzgün boş dəyərlər
         gemstone_type: null, 
         gemstone_carat: null,
         production_status: 'Hazırdır', 
@@ -61,10 +50,8 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
         credit_options: [],
     };
     
-    // FormData üçün state bəyanı
     const [formData, setFormData] = useState<ProductPayload>(emptyProduct);
 
-    // 2. LIFECYCLE VƏ DATA ÇƏKMƏ
     useEffect(() => {
         fetchData();
     }, []);
@@ -79,7 +66,6 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
 
             setProducts(productsResult.data || []);
             
-            // Ən son qızıl qiymətini götürmə
             if (goldPriceResult.data && goldPriceResult.data.length > 0) {
                 const latestPrice = goldPriceResult.data[0]; 
                 setGoldPrice(latestPrice.price_per_gram.toString());
@@ -109,7 +95,7 @@ export function AdminPanel({ onBack }: AdminPanelProps) {
             });
 
             toast.success('Qızıl qiyməti yeniləndi! Məhsul qiymətləri yenilənir...');
-            fetchData(); // Yeni qiyməti çəkmək üçün
+            fetchData(); 
         } catch (err) {
             console.error('Error updating gold price:', err);
             toast.error('Qızıl qiymətini yeniləməkdə xəta baş verdi.');

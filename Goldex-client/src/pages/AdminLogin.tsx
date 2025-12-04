@@ -37,7 +37,6 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
         formData.append("password", password);
 
         try {
-            // 1. API-a POST sorğusu göndərilir
             const response = await axios.post<TokenResponse>(
                 `${API_URL}/auth/token`, 
                 formData.toString(),
@@ -50,15 +49,12 @@ export function AdminLogin({ onLoginSuccess }: AdminLoginProps) {
 
             const { access_token } = response.data;
             
-            // 2. Tokeni local storage'a yazırıq (Tətbiqin yenilənməsi üçün lazım)
             localStorage.setItem('access_token', access_token);
             
-            // 3. Axios'un default header-ını təyin edirik (Bütün sorğular üçün avtorizasiya)
             axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
 
             toast.success("Giriş uğurludur!");
             
-            // 4. Tokeni valideyn komponentə ötürürük
             onLoginSuccess(access_token); 
 
         } catch (err) {

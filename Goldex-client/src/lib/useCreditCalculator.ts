@@ -1,21 +1,27 @@
-import { CreditSettings } from "../types/credits/credit.type";
+import { CreditOptionDetail } from "../types/credits/credit.type";
 
-// Simple Interest hesablama məntiqi
-export const calculateMonthlyPayment = (months: number, price: number, settings: CreditSettings): number => {
-  if (
-    isNaN(price) ||
-    price < settings.minPrice ||
-    price > settings.maxPrice ||
-    months <= 0
-  ) {
-    return 0;
-  }
+/**
+ * Sadə faiz (Simple Interest) metoduna əsaslanaraq aylıq ödənişi hesablayır.
+ *
+ * @param months - Kredit müddəti (ay sayı).
+ * @param price - Məhsulun əsas qiyməti.
+ * @param settings - Kredit seçimi (API-dan gələn min_months, max_months, percent daxil olmaqla).
+ * @returns Aylıq ödənişin məbləği.
+ */
+export const calculateMonthlyPayment = (months: number, price: number, settings: CreditOptionDetail): number => {
+  if (
+    isNaN(price) ||
+    price <= 0 ||
+    isNaN(months) ||
+    months < settings.min_months || // İnterfeysdən gələn min_months
+    months > settings.max_months    // İnterfeysdən gələn max_months
+  ) {
+    return 0;
+  }
 
-  // Faiz dərəcəsi (məsələn, 10% üçün 0.1)
-  const interestRate = settings.interestRate / 100;
-  
-  // Ümumi məbləğ = Əsas Qiymət * (1 + Faiz dərəcəsi * İllərin sayı)
-  const totalAmount = price * (1 + interestRate * (months / 12));
-  
-  return totalAmount / months;
+  const interestRate = settings.percent / 100;
+  const interestFactor = interestRate * (months / 12);
+  const totalAmount = price * (1 + interestFactor);
+  
+  return totalAmount / months;
 };
