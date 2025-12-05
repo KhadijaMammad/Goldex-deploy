@@ -35,7 +35,7 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
         title: '',
         description: null,
         slug: '',
-        category_id: null,
+        category_name: '',
         metal: '',
         material: '',
         carat: null,
@@ -49,7 +49,6 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
         discount: 0,
         custom_price: null,
         
-        // Boolean/Number default dəyərlər
         weight_grams: 0,
         active: true,
         isNew: false,
@@ -174,7 +173,7 @@ export function ProductEditModal({ product, onClose, onSave, goldPricePerGram }:
             const apiEndpoint = `${API_URL}/products${product?.id ? '/' + product.id : ''}`;
 
             if (product?.id) {
-                result = await axios.patch(apiEndpoint, productDataToSend, authConfig); 
+                result = await axios.put(apiEndpoint, productDataToSend, authConfig); 
             } else {
                 result = await axios.post(apiEndpoint, productDataToSend, authConfig); 
             }

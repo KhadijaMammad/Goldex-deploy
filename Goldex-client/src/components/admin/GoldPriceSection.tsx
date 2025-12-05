@@ -78,7 +78,7 @@ export function GoldPriceSection() {
                 return;
             }
 
-            await axios.put(`${API_URL}/gold_prices/${settingId}`, settingPayload);
+            await axios.patch(`${API_URL}/gold_prices/${settingId}`, settingPayload);
             toast.success('Qızıl qiyməti uğurla yeniləndi!');
 
             const productsResponse = await axios.get<ProductInfo[]>(`${API_URL}/products`);
