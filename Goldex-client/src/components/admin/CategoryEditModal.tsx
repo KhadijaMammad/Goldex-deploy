@@ -104,7 +104,7 @@ export function CategoryEditModal({ category, onClose, onSave }: CategoryEditMod
         setSaving(true);
         try {
             const payload: CategoryPayload = {
-                name: formData.name.trim(),
+                id: formData.name.trim(),
                 material: formData.material?.trim() || null, 
                 display_order: formData.display_order,
                 active: formData.active,

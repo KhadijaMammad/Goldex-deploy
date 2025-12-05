@@ -9,14 +9,10 @@ const API_URL = import.meta.env.VITE_API_URL;
 interface TokenResponse {
     access_token: string;
     token_type: string;
-    // Əgər refresh token istifadə olunursa, onu da buraya əlavə etmək lazımdır
-    // refresh_token?: string; 
 }
 
 
-// --- TİP DÜZƏLİŞİ: onLoginSuccess tokeni qəbul edir ---
 export interface AdminLoginProps {
-    // onLoginSuccess access_token-i qəbul etməlidir.
     onLoginSuccess: (token: string) => void; 
 }
 
