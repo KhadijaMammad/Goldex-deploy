@@ -1,57 +1,26 @@
-import { useState, useEffect } from "react";
-import axios from "axios";
+// ProductGrid.tsx
+
 import { ProductCard } from "./ProductCard";
 import { Loader2 } from "lucide-react";
-import { Product, ProductGridProps } from "../types/products/product.type";
+import { Product } from "../types/products/product.type";
 
-const API_URL = import.meta.env.VITE_API_URL;
+// ProductGridProps tipini tətbiqinizdəki reallığa uyğunlaşdırmalısınız
+interface ProductGridProps {
+  products: Product[]; // Artıq filtrlənmiş məhsullar massivi
+  loading: boolean;
+  error: string | null;
+  selectedCategoryName: string | null; // Boş mesajlar üçün kateqoriya adı
+  onViewDetails: (id: number) => void;
+}
 
 export function ProductGrid({
+  products,
+  loading,
+  error,
+  selectedCategoryName,
   onViewDetails,
-  selectedCategory,
 }: ProductGridProps) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  async function fetchProducts() {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const response = await axios.get<Product[]>(`${API_URL}/products`);
-      const data = response.data;
-
-      setProducts(data || []);
-    } catch (err) {
-      let errorMessage = "Məhsulları yükləmək mümkün olmadı";
-
-      if (axios.isAxiosError(err)) {
-        if (err.response) {
-          errorMessage = `Server Xətası: ${err.response.status} - ${err.response.statusText}`;
-        } else if (err.request) {
-          errorMessage = "Serverə qoşulma xətası. Şəbəkə problemi ola bilər.";
-        } else {
-          errorMessage = err.message;
-        }
-      } else if (err instanceof Error) {
-        errorMessage = err.message;
-      }
-
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  const filteredProducts = selectedCategory
-    ? products.filter((p) => p.category === selectedCategory)
-    : products;
-
+  
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -71,18 +40,13 @@ export function ProductGrid({
     );
   }
 
-  if (products.length === 0 && !selectedCategory) {
+  if (products.length === 0) {
+    const categoryName = selectedCategoryName ? ` (${selectedCategoryName})` : '';
     return (
       <div className="flex items-center justify-center min-h-96">
-        <p className="text-gray-600">Məhsul yoxdur</p>
-      </div>
-    );
-  }
-
-  if (filteredProducts.length === 0 && selectedCategory) {
-    return (
-      <div className="flex items-center justify-center min-h-96">
-        <p className="text-gray-600">Bu kateqoriyada məhsul yoxdur</p>
+        <p className="text-gray-600">
+          {selectedCategoryName ? `Bu kateqoriyada məhsul yoxdur${categoryName}` : "Məhsul yoxdur"}
+        </p>
       </div>
     );
   }
@@ -95,14 +59,14 @@ export function ProductGrid({
     <div>
       <div
         className="grid 
-                   grid-cols-2        /* Kiçik ekranlar üçün 2 sütun */
-                   md:grid-cols-3     /* Orta ekranlar üçün 3 sütun */
-                   lg:grid-cols-4     /* Böyük ekranlar üçün mütləq 4 sütun */
-                   gap-3              /* Kartlar arasındakı boşluq (~12px) */
-                   p-2                /* Kənarlarda kiçik boşluq */
+          grid-cols-2          /* Kiçik ekranlar üçün 2 sütun */
+          md:grid-cols-3       /* Orta ekranlar üçün 3 sütun */
+          lg:grid-cols-4       /* Böyük ekranlar üçün mütləq 4 sütun */
+          gap-3                /* Kartlar arasındakı boşluq (~12px) */
+          p-2                  /* Kənarlarda kiçik boşluq */
         "
       >
-        {filteredProducts.map((product) => (
+        {products.map((product) => (
           <ProductCard
             key={product.id}
             product={product}

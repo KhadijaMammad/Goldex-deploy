@@ -1,6 +1,5 @@
 import { ChevronDown } from "lucide-react";
 import { useState } from "react";
-// Fərz edirik ki, CategoryDropdownProps və Category tipi bu fayldadır:
 import {  Category, CategoryDropdownProps } from "../types/categories/category.type"; 
 
 export function CategoryDropdown({

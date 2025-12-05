@@ -22,7 +22,6 @@ export function CategoryTabs({ categories, selectedCategory, onCategorySelect, h
             Bütün Məhsullar
           </button>
 
-          {/* Kateqoriya sekmələri */}
           {categories.map(category => (
             <button
               key={category.id} 
