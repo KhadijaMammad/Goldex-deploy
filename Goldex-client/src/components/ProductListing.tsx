@@ -12,7 +12,6 @@ const PRODUCTS_API_URL = `${API_URL}/products`;
 type CategoryId = number | null; 
 
 export function ProductListingPage() {
-    // State-lər
     const [categories, setCategories] = useState<Category[]>([]);
     const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [selectedCategory, setSelectedCategory] = useState<CategoryId>(null);

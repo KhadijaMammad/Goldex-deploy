@@ -104,7 +104,7 @@ export function CategoryEditModal({ category, onClose, onSave }: CategoryEditMod
         setSaving(true);
         try {
             const payload: CategoryPayload = {
-                id: formData.name.trim(),
+                name: formData.name.trim(),
                 material: formData.material?.trim() || null, 
                 display_order: formData.display_order,
                 active: formData.active,
@@ -113,7 +113,7 @@ export function CategoryEditModal({ category, onClose, onSave }: CategoryEditMod
             if (isEditing) {
                 await axios.patch(`${API_URL}/categories/${category.id}`, payload);
             } else {
-                await axios.post(`${API_URL}/categories`, payload);
+                await axios.post(`${API_URL}/categories/`, payload);
             }
 
             toast.success(isEditing ? 'Kateqoriya uğurla yeniləndi!' : 'Yeni kateqoriya əlavə edildi!');

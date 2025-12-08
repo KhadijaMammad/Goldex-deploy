@@ -2,13 +2,11 @@ import { ProductCardProps } from "../types/products/product.type";
 
 export function ProductCard({ product, onViewDetails }: ProductCardProps) {
 
-  // Mövcudluq etiketini boolean dəyərə əsasən təyin edən funksiya (YENİ)
   const getAvailabilityLabel = (availability: boolean | string | null | undefined): string => {
     if (typeof availability === 'boolean') {
       return availability ? "Stokda Mövcuddur" : "Stokda Yoxdur";
     }
 
-    // Əgər string, null və ya undefined gəlirsə, köhnə string əsaslı məntiqi istifadə edin.
     const safeAvailability = typeof availability === "string" ? availability : "";
     const lower = safeAvailability.toLowerCase();
 
@@ -24,9 +22,8 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
     return "Məlumat Yoxdur";
   };
 
-  // Mövcudluq rəngini təyin edən funksiya (Yenilənmiş)
   const getAvailabilityColor = (availability: boolean | string | null | undefined) => {
-    const label = getAvailabilityLabel(availability); // YENİ: Etiketi əldə edirik
+    const label = getAvailabilityLabel(availability);
 
     if (label.includes("Stokda Mövcuddur")) {
       return "bg-emerald-100 text-emerald-800";
@@ -48,7 +45,6 @@ export function ProductCard({ product, onViewDetails }: ProductCardProps) {
 
   const formattedWeight = product.weight || "N/A";
   
-  // Etiketi təyin edirik
   const availabilityLabel = getAvailabilityLabel(product.availability);
 
 
