@@ -1,41 +1,40 @@
 import { CreditOptionDetail } from "../credits/credit.type";
 
-
 export interface Product {
-    [x: string]: any;
-    main_image: any;
-    id: number;
-    title: string;
-    description: string | null;
-    slug: string;
-    category_id: number;
-    metal: string; 
-    material: string; 
-    carat: string | null;
-    weight: string; 
-    main_image_link: string;
-    gemstone_type: string | null;
-    gemstone_carat: string | null;
-    gemstone_size: string | null;
-    production_status: 'Hazırdır' | 'Sifarişlə';
-    availability: 'mövcuddur' | 'mövcud deyil' | 'sifarişlə';
-    stock_status: 'Stokda' | 'Stokda deyil';
-    discount: number;
-    search_string: string | null;
-    views_count: number;
-    is_active: boolean;
-    is_new: boolean;
-    is_recommended: boolean;
-    is_most_viewed: boolean;
-    created_at: string;
-    updated_at: string;
-    custom_price: number | null; 
-    gold_price_id: number; 
+  [x: string]: any;
+  main_image: any;
+  id: number;
+  title: string;
+  description: string | null;
+  slug: string;
+  category_id: number;
+  metal: string;
+  material: string;
+  carat: string | null;
+  weight: string;
+  main_image_link: string;
+  gemstone_type: string | null;
+  gemstone_carat: string | null;
+  gemstone_size: string | null;
+  production_status: "Hazırdır" | "Sifarişlə";
+  availability: "mövcuddur" | "mövcud deyil" | "sifarişlə";
+  stock_status: "Stokda" | "Stokda deyil";
+  discount: number;
+  search_string: string | null;
+  views_count: number;
+  is_active: boolean;
+  is_new: boolean;
+  is_recommended: boolean;
+  is_most_viewed: boolean;
+  created_at: string;
+  updated_at: string;
+  custom_price: number | null;
+  gold_price_id: number;
 }
 
 export interface ProductCardProps {
-  product: Product;
-  onViewDetails: (id: number) => void;
+  product: Product;
+  onViewDetails: (id: number) => void;
 }
 
 export interface Setting {
@@ -46,19 +45,24 @@ export interface Setting {
 }
 
 export interface ProductGridProps {
-    onViewDetails: (productId: number) => void;
-    selectedCategory: number | null; 
-    onCategoryChange: (categoryId: number | null) => void;
+  products: Product[];
+  loading: boolean;
+  error: string | null;
+  selectedCategoryName: string | null;
+  onViewDetails: (productId: number) => void;
+  onLoadMore: () => void;
+  hasMore: boolean;
+  currentPage: number;
 }
 
 export interface ProductDetailProps {
-  productId: number;
-  onBack: () => void;
+  productId: number;
+  onBack: () => void;
 }
 
- export interface ProductDetailModalProps {
-    productId: number;
-    onClose: () => void;
+export interface ProductDetailModalProps {
+  productId: number;
+  onClose: () => void;
 }
 
 export interface ProductData {
@@ -70,12 +74,9 @@ export interface ProductData {
   priceAZN: number;
 }
 
-
 export interface ProductEditModalProps {
   product: Product | null;
   onClose: () => void;
   onSave: () => void;
   goldPricePerGram: number;
 }
-
-

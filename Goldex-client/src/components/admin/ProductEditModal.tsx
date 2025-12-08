@@ -237,8 +237,7 @@ export function ProductEditModal({
       };
 
       const isEdit = !!product?.id;
-      const apiEndpoint = `${API_URL}/products/${
-        isEdit ? `/${product.id}` : ""
+      const apiEndpoint = `${API_URL}/products/` + `${isEdit ? product.id : ""
       }`;
       if (product?.id) {
         await axios.patch(apiEndpoint, productDataToSend, authConfig);
